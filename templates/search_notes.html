@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Search Notes</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet" />
+    <style>
+        /* Search bar styling */
+        .search-section {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 20px auto;
+            gap: 10px;
+            max-width: 600px;
+        }
+
+        .search-section input[type="text"] {
+            padding: 10px;
+            font-size: 16px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            flex: 1;
+        }
+
+        .search-section input[type="submit"] {
+            padding: 10px 20px;
+            background-color: #4a90e2;
+            border: none;
+            color: white;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .search-section input[type="submit"]:hover {
+            background-color: #357abd;
+        }
+
+        /* Results layout */
+        .results-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            padding: 20px;
+        }
+
+        .note-card {
+            display: flex;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            overflow: hidden;
+            width: 800px;
+            max-width: 95%;
+        }
+
+        .preview-box {
+            width: 200px;
+            height: 200px;
+            background-color: #eee;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+
+        .preview-box img,
+        .preview-box embed {
+            max-width: 100%;
+            max-height: 100%;
+            transition: transform 0.3s ease;
+        }
+
+        .preview-box img:hover,
+        .preview-box embed:hover {
+            transform: scale(1.2);
+        }
+
+        .note-details {
+            padding: 15px;
+            flex: 1;
+        }
+
+        .note-details h3 {
+            margin: 0;
+            font-size: 20px;
+            color: #333;
+        }
+
+        .note-details p {
+            margin: 5px 0;
+            color: #555;
+        }
+
+        .actions {
+            margin-top: 10px;
+        }
+
+        .actions a,
+        .actions button {
+            display: inline-block;
+            margin-right: 8px;
+            padding: 8px 14px;
+            background-color: #4a90e2;
+            color: white;
+            border-radius: 5px;
+            text-decoration: none;
+            font-size: 14px;
+            border: none;
+            cursor: pointer;
+        }
+
+        .actions a:hover,
+        .actions button:hover {
+            background-color: #357abd;
+            transform: scale(1.2);
+        }
+    </style>
+</head>
+<body>
+    
+<header class="cover">
+  <div class="container">
+    <h1>Search Notes Portal</h1>
+    <p>Your one-stop platform for uploading, searching, and managing study notes and assignments effortlessly.</p>
+  </div>
+</header>
+
+<nav>
+  <ul class="navbar">
+    <li><a href="/profile">👤</a></li>
+    <li><a href="{{ url_for('home') }}">🏠</a></li>
+    <li><a href="/upload_notes">Upload Notes</a></li>
+    <li><a href="/search_notes">Search Notes</a></li>
+    <li><a href="{{ url_for('upload_assignment') }}">Upload Assignment</a></li>
+    <li><a href="{{ url_for('search_assignment') }}">Search Assignment</a></li>
+    <li><a href="/attendance">Attendance</a></li>
+    <li><a href="/logout">🚪</a></li>
+  </ul>
+</nav>
+
+<!-- Search bar -->
+<form method="POST" action="{{ url_for('search_notes') }}" class="search-section">
+    <input type="text" name="query" placeholder="Enter subject or topic" required>
+    <input type="submit" value="Search">
+</form>
+
+<!-- Results -->
+<div class="results-container">
+    {% if results %}
+        {% for note in results %}
+        <div class="note-card">
+            <div class="preview-box">
+                {% if note.filename %}
+                    {% set ext = note.filename.rsplit('.',1)[-1].lower() %}
+                    {% if ext == 'pdf' %}
+                        <embed src="{{ url_for('uploaded_file', filename=note.filename, t=note._id) }}" type="application/pdf">
+                    {% elif ext in ['jpg','jpeg','png'] %}
+                        <img src="{{ url_for('uploaded_file', filename=note.filename, t=note._id) }}">
+                    {% else %}
+                        <span>FILE</span>
+                    {% endif %}
+                {% elif note.captured_image %}
+                    <img src="{{ url_for('uploaded_file', filename=note.captured_image, t=note._id) }}">
+                {% else %}
+                    <span>—</span>
+                {% endif %}
+            </div>
+            <div class="note-details">
+                <h3>{{ note.subject }}</h3>
+                <p><strong>Topic:</strong> {{ note.topic }}</p>
+                <p><strong>Uploaded By:</strong> {{ note.uploaded_by }}</p>
+                <div class="actions">
+                    <a href="{{ url_for('view_notes', note_id=note._id) }}">View</a>
+                    <a href="{{ url_for('download_note', note_id=note._id) }}">Download</a>
+                    <a href="{{ url_for('edit_note', note_id=note._id) }}">Edit</a>
+                    <form style="display:inline;" method="POST" action="{{ url_for('delete_note', note_id=note._id) }}" onsubmit="return confirm('Are you sure you want to delete this note?');">
+                        <button type="submit">🗑️ Delete</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <p>No notes found. Try searching again.</p>
+    {% endif %}
+</div>
+
+<a href="{{ url_for('home') }}">← Back to Home</a>
+
+</body>
+</html>

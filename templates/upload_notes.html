@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Upload Notes</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet" />
+    <style>
+        /* General Page Styling */
+        body {
+            font-family: 'Poppins', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f6fa;
+        }
+
+        /* Container to hold form (left) and image+description (right) */
+        .main-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            max-width: 1100px;
+            margin: 40px auto;
+            gap: 40px;
+            padding: 20px;
+        }
+
+        /* Left Side - Form Section */
+        .form-card {
+            flex: 1;
+            background: #fff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .form-card h2 {
+            margin-top: 0;
+            color: #2c3e50;
+        }
+
+        .form-card label {
+            display: block;
+            font-weight: 500;
+            margin: 15px 0 5px;
+        }
+
+        .form-card input[type="text"],
+        .form-card input[type="file"],
+        .form-card input[type="submit"],
+        .form-card button {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-size: 14px;
+            margin-bottom: 15px;
+        }
+
+        .form-card input[type="submit"] {
+            background: #2c3e50;
+            color: white;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        .form-card input[type="submit"]:hover {
+            background: #1a252f;
+        }
+
+        .form-card button {
+            background: #3498db;
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        .form-card button:hover {
+            background: #217dbb;
+        }
+
+        /* Right Side - Image & Description */
+        .right-side {
+            flex: 0.9;
+            text-align: center;
+        }
+
+        .right-side img {
+            width: 100%;
+            max-width: 400px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .right-side p {
+            margin-top: 15px;
+            font-size: 15px;
+            color: #555;
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+        }
+
+        /* Flash Messages */
+        ul {
+            padding: 0;
+            list-style: none;
+        }
+
+        ul li {
+            margin: 8px 0;
+            font-size: 14px;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 900px) {
+            .main-container {
+                flex-direction: column;
+                align-items: center;
+            }
+            .right-side {
+                margin-top: 20px;
+            }
+        }
+        .flash-success { color: green; font-weight:600; text-align:center; font-size:1.2rem; padding:1rem; }
+  .flash-error { color: red; font-weight:600; text-align:center; font-size:1.2rem; padding:1rem; }
+</style>
+</head>
+<body>
+    
+<header class="cover">
+  <div class="container">
+    <h1>upload Notes Portal</h1>
+    <p>Your one-stop platform for uploading, searching, and managing study notes and assignments effortlessly.</p>
+  </div>
+</header>
+
+<nav>
+  <ul class="navbar">
+    <li><a href="/profile">👤</a></li>
+    <li><a href="{{ url_for('home') }}">🏠</a></li>
+    <li><a href="/upload_notes">Upload Notes</a></li>
+    <li><a href="/search_notes">Search Notes</a></li>
+    <li><a href="{{ url_for('upload_assignment') }}">Upload Assignment</a></li>
+    <li><a href="{{ url_for('search_assignment') }}">Search Assignment</a></li>
+    <li><a href="/attendance">Attendance</a></li>
+    <li><a href="/logout">🚪</a></li>
+  </ul>
+</nav>
+
+<div class="main-container">
+    <!-- Left Side Form -->
+    <div class="form-card">
+        <h2>Upload Notes</h2>
+<!-- Flash Message -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    {% for category, message in messages %}
+      <div class="flash-{{ category }}">
+        {{ message }}
+      </div>
+    {% endfor %}
+  {% endif %}
+{% endwith %}
+
+
+        <!-- Upload Form -->
+        <form action="{{ url_for('upload_notes') }}" method="post" enctype="multipart/form-data">
+            <label>Subject:
+                <input type="text" name="subject" required autofocus>
+            </label>
+
+            <label>Topic:
+                <input type="text" name="topic" required>
+            </label>
+
+            <button type="button" onclick="showUpload()">📁 Upload File</button>
+            <button type="button" onclick="showCamera()">📷 Capture Image</button><br><br>
+
+            <!-- File Upload Section -->
+            <div id="uploadSection" style="display:none;">
+                <input type="file" name="file" accept=".pdf,.txt,.png,.jpg,.jpeg,.gif">
+            </div>
+
+            <!-- Camera Section -->
+            <div id="cameraSection" style="display:none;">
+                <video id="video" width="320" height="240" autoplay playsinline></video><br>
+                <button type="button" onclick="capturePhoto()">📸 Capture</button><br><br>
+                <canvas id="canvas" width="640" height="480" style="display:none;"></canvas>
+                <img id="preview" width="200" style="display:none;" alt="Captured Image Preview">
+            </div>
+
+            <input type="hidden" name="captured" id="captured">
+            <br>
+            <input type="submit" value="Upload">
+        </form>
+    </div>
+
+    <!-- Right Side Image + Description -->
+    <div class="right-side">
+        <img src="{{ url_for('static', filename='img6.jpeg') }}" alt="Upload Notes">
+        <p>
+            Welcome to the Upload Notes portal. Here you can easily upload your study materials, 
+            assignments, and other resources. Choose between uploading a file or capturing an 
+            image using your camera, and make your learning resources accessible anytime.
+        </p>
+    </div>
+</div>
+
+<script>
+    function showUpload() {
+        document.getElementById('uploadSection').style.display = 'block';
+        document.getElementById('cameraSection').style.display = 'none';
+        stopCamera();
+    }
+
+    function showCamera() {
+        document.getElementById('uploadSection').style.display = 'none';
+        document.getElementById('cameraSection').style.display = 'block';
+
+        navigator.mediaDevices.getUserMedia({ video: true })
+            .then(stream => {
+                document.getElementById('video').srcObject = stream;
+            })
+            .catch(err => {
+                alert("Camera not available.");
+            });
+    }
+
+    function stopCamera() {
+        const video = document.getElementById('video');
+        if (video.srcObject) {
+            video.srcObject.getTracks().forEach(track => track.stop());
+            video.srcObject = null;
+        }
+    }
+
+    function capturePhoto() {
+        const canvas = document.getElementById('canvas');
+        const video = document.getElementById('video');
+        const context = canvas.getContext('2d');
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        const dataURL = canvas.toDataURL('image/jpeg', 0.6);
+        document.getElementById('captured').value = dataURL;
+        document.getElementById('preview').src = dataURL;
+        document.getElementById('preview').style.display = 'block';
+    }
+</script>
+
+<a href="{{ url_for('search_notes') }}">← Back to Search</a>
+
+</body>
+</html>

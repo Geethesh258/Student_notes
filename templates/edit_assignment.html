@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Edit Assignment</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet" />
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #f5f6fa;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+            line-height: 1.6;
+        }
+
+        h2 {
+            color: #2c3e50;
+            font-weight: 600;
+            font-size: 28px;
+            margin-bottom: 20px;
+        }
+
+        /* Main container: Form left + Image/Info right */
+        .edit-assignment-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            max-width: 1100px;
+            margin: 40px auto 60px;
+            gap: 40px;
+            padding: 0 20px;
+        }
+
+        /* Left Side: Form styling */
+        form {
+            flex: 1;
+            min-width: 320px;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        label {
+            display: block;
+            font-weight: 500;
+            margin: 15px 0 5px;
+            color: #2c3e50;
+        }
+
+        input[type="text"],
+        input[type="date"],
+        input[type="file"] {
+            width: 100%;
+            padding: 10px 12px;
+            font-size: 14px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            transition: border-color 0.3s ease;
+        }
+
+        input[type="text"]:focus,
+        input[type="date"]:focus,
+        input[type="file"]:focus {
+            border-color: #3498db;
+            outline: none;
+        }
+
+        button, input[type="submit"] {
+            width: 100%;
+            padding: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: background 0.3s ease;
+        }
+
+        input[type="submit"] {
+            background-color: #2c3e50;
+            color: white;
+        }
+
+        input[type="submit"]:hover {
+            background-color: #1a252f;
+        }
+
+        button {
+            background-color: #3498db;
+            color: white;
+        }
+
+        button:hover {
+            background-color: #217dbb;
+        }
+
+        video, canvas {
+            display: none;
+            margin-top: 10px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 400px;
+            height: auto;
+        }
+
+        /* Right Side: Image + Info Text */
+        .right-side {
+            flex: 0.9;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        .right-side img {
+            width: 100%;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            margin-bottom: 15px;
+        }
+
+        .right-side p {
+            font-size: 15px;
+            color: #555;
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+        }
+
+        /* Flash message styling */
+        .flash-message {
+            max-width: 600px;
+            margin-bottom: 20px;
+            padding: 12px 20px;
+            background-color: #d4edda;
+            color: #155724;
+            border-radius: 8px;
+            border: 1px solid #c3e6cb;
+            box-shadow: 0 4px 12px rgba(40, 167, 69, 0.2);
+        }
+
+        a {
+            color: #3498db;
+            font-weight: 600;
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        /* Responsive layout */
+        @media (max-width: 900px) {
+            .edit-assignment-container {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .right-side {
+                max-width: 100%;
+                margin-top: 20px;
+            }
+
+            form {
+                max-width: 100%;
+                margin-bottom: 40px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<header class="cover">
+  <div class="container">
+    <h1>Edit Assignment</h1>
+    <p>Your one-stop platform for uploading, searching, and managing assignments effortlessly.</p>
+  </div>
+</header>
+
+<nav>
+  <ul class="navbar">
+    <li><a href="/profile">👤</a></li>
+    <li><a href="{{ url_for('home') }}">🏠</a></li>
+    <li><a href="/upload_notes">Upload Notes</a></li>
+    <li><a href="/search_notes">Search Notes</a></li>
+    <li><a href="{{ url_for('upload_assignment') }}">Upload Assignment</a></li>
+    <li><a href="{{ url_for('search_assignment') }}">Search Assignment</a></li>
+    <li><a href="/attendance">Attendance</a></li>
+    <li><a href="/logout">🚪</a></li>
+  </ul>
+</nav>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    {% for category, message in messages %}
+      <div class="flash-message">{{ message }}</div>
+    {% endfor %}
+  {% endif %}
+{% endwith %}
+
+<div class="edit-assignment-container">
+  <!-- Left: Form -->
+  <form method="POST" enctype="multipart/form-data" id="editAssignmentForm">
+      <label>Subject:</label>
+      <input type="text" name="subject" value="{{ assignment.subject }}" required>
+
+      <label>Title:</label>
+      <input type="text" name="title" value="{{ assignment.title }}" required>
+
+      <label>Due Date:</label>
+      <input type="date" name="due_date" value="{{ assignment.due_date_str }}" required>
+
+      <label>Upload New File (PDF/Image):</label>
+      <input type="file" name="file" accept="image/*,application/pdf" onchange="clearCaptured()">
+
+      <hr>
+
+      <label>OR Capture New Image:</label><br>
+      <button type="button" onclick="startCamera()">Start Camera</button>
+      <video id="video" autoplay></video>
+      <canvas id="canvas"></canvas><br>
+      <input type="hidden" name="captured_image" id="captured_image">
+      <button type="button" onclick="capture()">Capture</button>
+
+      <hr>
+
+      <input type="submit" value="Update">
+  </form>
+
+  <!-- Right: Image + Info -->
+  <div class="right-side">
+      <img src="{{ url_for('static', filename='img5.jpeg') }}" alt="Edit Assignment">
+      <p>
+          Here you can update assignment details, change due dates, and upload or capture new files.
+          Keep your assignments organized and accessible anytime.
+      </p>
+  </div>
+</div>
+
+<a href="javascript:history.back()" class="back-btn">← Back</a>
+
+<script>
+const MAX_FILE_SIZE = 16 * 1024 * 1024;
+let video = null;
+let canvas = null;
+let capturedInput = null;
+let stream = null;
+
+function startCamera() {
+    if (!video) {
+        video = document.getElementById('video');
+        canvas = document.getElementById('canvas');
+        capturedInput = document.getElementById('captured_image');
+    }
+    clearFileInput();
+
+    if (stream) return;
+
+    navigator.mediaDevices.getUserMedia({ video: true }).then(s => {
+        stream = s;
+        video.srcObject = s;
+        video.style.display = 'block';
+        canvas.style.display = 'none';
+    }).catch(() => alert('Camera access denied or not available.'));
+}
+
+function capture() {
+    if (!video || !canvas || !capturedInput) return;
+
+    const ctx = canvas.getContext('2d');
+    let w = video.videoWidth;
+    let h = video.videoHeight;
+    const maxDim = 800;
+    if (w > h && w > maxDim) {
+      h = Math.round(h * maxDim / w);
+      w = maxDim;
+    } else if (h > w && h > maxDim) {
+      w = Math.round(w * maxDim / h);
+      h = maxDim;
+    }
+    canvas.width = w;
+    canvas.height = h;
+
+    ctx.drawImage(video, 0, 0, w, h);
+    canvas.style.display = 'block';
+
+    capturedInput.value = canvas.toDataURL('image/jpeg', 0.8);
+
+    if (stream) {
+      stream.getTracks().forEach(track => track.stop());
+      stream = null;
+      video.style.display = 'none';
+    }
+}
+
+function clearCaptured() {
+    if (!capturedInput) capturedInput = document.getElementById('captured_image');
+    capturedInput.value = '';
+    if (canvas) canvas.style.display = 'none';
+}
+
+function clearFileInput() {
+    const fileInput = document.querySelector('input[name="file"]');
+    if (fileInput) fileInput.value = '';
+}
+
+function resizeImage(file, maxWidth, maxHeight, callback) {
+  const reader = new FileReader();
+  reader.readAsDataURL(file);
+  reader.onload = e => {
+    const img = new Image();
+    img.src = e.target.result;
+    img.onload = () => {
+      let width = img.width;
+      let height = img.height;
+
+      if (width > maxWidth) {
+        height = Math.round(height * maxWidth / width);
+        width = maxWidth;
+      }
+      if (height > maxHeight) {
+        width = Math.round(width * maxHeight / height);
+        height = maxHeight;
+      }
+
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, width, height);
+
+      canvas.toBlob(blob => {
+        callback(blob);
+      }, file.type, 0.8);
+    };
+  };
+}
+
+document.querySelector('input[name="file"]').addEventListener('change', function(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  if (file.size > MAX_FILE_SIZE) {
+    if (file.type === 'application/pdf') {
+      alert('PDF file too large! Max 16MB.');
+      e.target.value = '';
+      return;
+    }
+    if (file.type.startsWith('image/')) {
+      resizeImage(file, 1024, 1024, resizedBlob => {
+        if (resizedBlob.size > MAX_FILE_SIZE) {
+          alert('Image still too large after resizing. Choose smaller image.');
+          e.target.value = '';
+          return;
+        }
+        const resizedFile = new File([resizedBlob], file.name, {type: file.type});
+        const dataTransfer = new DataTransfer();
+        dataTransfer.items.add(resizedFile);
+        e.target.files = dataTransfer.files;
+        alert('Image resized to fit size limit.');
+      });
+      return;
+    }
+    alert('File too large! Max 16MB.');
+    e.target.value = '';
+    return;
+  }
+});
+</script>
+
+</body>
+</html>

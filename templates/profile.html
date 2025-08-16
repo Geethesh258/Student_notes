@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile - Student Notes Portal</title>
+    
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet" />
+
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            margin: 0;
+            background: #f8f9fc;
+            color: #333;
+        }
+
+        .profile-container {
+            max-width: 800px;
+            margin: 30px auto;
+            background: white;
+            padding: 25px 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+
+        .profile-header {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 20px;
+        }
+
+        .profile-header img {
+            border-radius: 50%;
+            border: 3px solid #4e73df;
+        }
+
+        .profile-details p {
+            margin: 5px 0;
+            font-size: 1rem;
+        }
+
+        h3 {
+            margin-top: 25px;
+            color: #4e73df;
+        }
+
+        ul {
+            list-style: disc;
+            padding-left: 20px;
+        }
+
+        ul li {
+            padding: 5px 0;
+        }
+
+        .profile-actions {
+            margin-top: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .profile-actions a,
+        .profile-actions button {
+            background: #4e73df;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 6px;
+            text-decoration: none;
+            border: none;
+            cursor: pointer;
+            transition: background 0.3s;
+            font-size: 0.9rem;
+        }
+
+        .profile-actions a:hover,
+        .profile-actions button:hover {
+            background: #224abe;
+        }
+
+        .delete-btn {
+            background: #e74a3b;
+        }
+
+        .delete-btn:hover {
+            background: #c0392b;
+        }
+
+        /* Feedback form styles */
+        .feedback-form {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+
+        .feedback-form textarea {
+            width: 100%;
+            padding: 10px;
+            border-radius: 6px;
+            border: 1px solid #ddd;
+            font-family: inherit;
+            resize: none;
+            font-size: 0.95rem;
+        }
+
+        .feedback-form button {
+            margin-top: 10px;
+            background: #4e73df;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: background 0.3s;
+        }
+
+        .feedback-form button:hover {
+            background: #224abe;
+        }
+    </style>
+</head>
+
+<body>
+    
+<header class="cover">
+  <div class="container">
+    <h1>👤 Users</h1>
+    <p>Your one-stop platform for uploading, searching, and managing study notes and assignments effortlessly.</p>
+  </div>
+</header>
+
+<nav>
+  <ul class="navbar">
+    <li><a href="/profile">👤</a></li>
+    <li><a href="{{ url_for('home') }}">🏠</a></li>
+    <li><a href="/upload_notes">Upload Notes</a></li>
+    <li><a href="/search_notes">Search Notes</a></li>
+    <li><a href="{{ url_for('upload_assignment') }}">Upload Assignment</a></li>
+    <li><a href="{{ url_for('search_assignment') }}">Search Assignment</a></li>
+    <li><a href="/attendance">Attendance</a></li>
+    <li><a href="/logout">🚪</a></li>
+  </ul>
+</nav>
+
+<div class="profile-container">
+    <div class="profile-header">
+        {% if user.profile_pic %}
+            <img src="{{ url_for('static', filename='profile_pics/' + user.profile_pic) }}" alt="Profile Picture" width="120">
+        {% else %}
+            <img src="{{ url_for('static', filename='default_profile.png') }}" alt="Default Profile Picture" width="120">
+        {% endif %}
+        
+        <div class="profile-details">
+            <p><strong>Name:</strong> {{ user.name }}</p>
+            <p><strong>Email:</strong> {{ user.email }}</p>
+        </div>
+    </div>
+
+    <h3>Recent Activities:</h3>
+    <ul>
+        {% for act in user.activities %}
+            <li>{{ act }}</li>
+        {% else %}
+            <li>No recent activities.</li>
+        {% endfor %}
+    </ul>
+
+    <div class="profile-actions">
+        <a href="{{ url_for('edit_profile') }}">Edit Profile</a>
+        <a href="{{ url_for('change_password') }}">Change Password</a>
+        <form action="{{ url_for('delete_account') }}" method="POST" onsubmit="return confirm('Are you sure?');" style="margin:0;">
+            <button type="submit" class="delete-btn">Delete Account</button>
+        </form>
+    </div>
+
+    <!-- Feedback Form -->
+    <div class="feedback-form">
+        <h3>💬 Give Feedback</h3>
+        <form action="{{ url_for('submit_feedback') }}" method="POST">
+            <textarea name="feedback" rows="4" placeholder="Write your feedback here..." required></textarea>
+            <button type="submit">Submit Feedback</button>
+        </form>
+    </div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Edit Note</title>
+    
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet" />
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #f5f6fa;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+            line-height: 1.6;
+        }
+
+        h2 {
+            color: #2c3e50;
+            font-weight: 600;
+            font-size: 28px;
+            margin-bottom: 20px;
+        }
+
+        /* Container for form and right side */
+        .edit-note-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            max-width: 1100px;
+            margin: 40px auto 60px;
+            gap: 40px;
+            padding: 0 20px;
+        }
+
+        /* Form container */
+        form {
+            flex: 1;
+            min-width: 320px;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            margin-bottom: 40px;
+        }
+
+        label {
+            display: block;
+            font-weight: 500;
+            margin: 15px 0 5px;
+            color: #2c3e50;
+        }
+
+        input[type="text"],
+        input[type="file"] {
+            width: 100%;
+            padding: 10px 12px;
+            font-size: 14px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            transition: border-color 0.3s ease;
+        }
+
+        input[type="text"]:focus,
+        input[type="file"]:focus {
+            border-color: #3498db;
+            outline: none;
+        }
+
+        button, input[type="submit"] {
+            width: 100%;
+            padding: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: background 0.3s ease;
+        }
+
+        input[type="submit"] {
+            background-color: #2c3e50;
+            color: white;
+        }
+
+        input[type="submit"]:hover {
+            background-color: #1a252f;
+        }
+
+        button {
+            background-color: #3498db;
+            color: white;
+        }
+
+        button:hover {
+            background-color: #217dbb;
+        }
+
+        video, canvas {
+            display: none;
+            margin-top: 10px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 400px;
+            height: auto;
+        }
+
+        /* Flash message */
+        .flash-message {
+            max-width: 600px;
+            margin-bottom: 20px;
+            padding: 12px 20px;
+            background-color: #d4edda;
+            color: #155724;
+            border-radius: 8px;
+            border: 1px solid #c3e6cb;
+            box-shadow: 0 4px 12px rgba(40, 167, 69, 0.2);
+        }
+
+        a {
+            color: #3498db;
+            font-weight: 600;
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        /* Right side container */
+        .right-side {
+            flex: 0.9;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        .right-side img {
+            width: 100%;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            margin-bottom: 15px;
+        }
+
+        .right-side p {
+            font-size: 15px;
+            color: #555;
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+        }
+ .back-container {
+    display: flex;
+    justify-content: flex-end; /* right align */
+    max-width: 1100px;         /* match main container width */
+    margin: 20px auto;         /* spacing from navbar */
+}
+
+/* Back button styling with pop effect */
+.back-btn {
+    background-color: #3498db;
+    color: white;
+    padding: 10px 18px;
+    border-radius: 6px;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.3s ease;
+}
+
+.back-btn:hover {
+    background-color: #217dbb;
+    transform: scale(1.1);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+}
+        @media (max-width: 900px) {
+            .edit-note-container {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .right-side {
+                max-width: 100%;
+                margin-top: 20px;
+            }
+
+            form {
+                max-width: 100%;
+                margin-bottom: 40px;
+            }
+        }
+    </style>
+</head>
+<body>
+    
+<header class="cover">
+  <div class="container">
+    <h1>Edit Note</h1>
+    <p>Your one-stop platform for uploading, searching, and managing study notes and assignments effortlessly.</p>
+  </div>
+</header>
+
+<nav>
+  <ul class="navbar">
+    <li><a href="/profile">👤</a></li>
+    <li><a href="{{ url_for('home') }}">🏠</a></li>
+    <li><a href="/upload_notes">Upload Notes</a></li>
+    <li><a href="/search_notes">Search Notes</a></li>
+    <li><a href="{{ url_for('upload_assignment') }}">Upload Assignment</a></li>
+    <li><a href="{{ url_for('search_assignment') }}">Search Assignment</a></li>
+    <li><a href="/attendance">Attendance</a></li>
+    <li><a href="/logout">🚪</a></li>
+  </ul>
+</nav>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    {% for category, message in messages %}
+      <div class="flash-message">{{ message }}</div>
+    {% endfor %}
+  {% endif %}
+{% endwith %}
+
+<h2>Edit Note</h2>
+
+<div class="edit-note-container">
+  <form method="POST" enctype="multipart/form-data">
+      <label>Subject:</label>
+      <input type="text" name="subject" value="{{ note.subject }}" required>
+
+      <label>Topic:</label>
+      <input type="text" name="topic" value="{{ note.topic }}" required>
+
+      <label>Upload New File (PDF/Image):</label>
+      <input type="file" name="file" onchange="clearCaptured()">
+
+      <hr>
+
+      <label>OR Capture New Image:</label><br>
+      <button type="button" onclick="startCamera()">Start Camera</button>
+      <video id="video" autoplay></video>
+      <canvas id="canvas"></canvas><br>
+      <input type="hidden" name="captured_image" id="captured_image">
+      <button type="button" onclick="capture()">Capture</button>
+
+      <hr>
+
+      <input type="submit" value="Update">
+  </form>
+
+  <div class="right-side">
+      <img src="{{ url_for('static', filename='img3.jpeg') }}" alt="Upload Notes">
+      <p>
+          Welcome to the Upload Notes portal. Here you can easily upload your study materials, 
+          assignments, and other resources. Choose between uploading a file or capturing an 
+          image using your camera, and make your learning resources accessible anytime.
+      </p>
+  </div>
+</div>
+<!-- Back Button -->
+<div class="back-container">
+    <a href="javascript:history.back()" class="back-btn">← Back</a>
+</div>
+<script>
+let video = document.getElementById("video");
+let canvas = document.getElementById("canvas");
+let capturedInput = document.getElementById("captured_image");
+let streamStarted = false;
+
+function startCamera() {
+    document.querySelector('input[name="file"]').value = "";  // clear file input
+    if (!streamStarted) {
+        navigator.mediaDevices.getUserMedia({ video: true }).then(stream => {
+            video.srcObject = stream;
+            video.style.display = "block";
+            streamStarted = true;
+        }).catch(err => {
+            alert("Camera access denied");
+        });
+    }
+}
+
+function capture() {
+    if (!streamStarted) return;
+    const context = canvas.getContext("2d");
+
+    // Resize to max 800px width or height (preserving aspect ratio)
+    let width = video.videoWidth;
+    let height = video.videoHeight;
+    const maxDim = 800;
+    if (width > height && width > maxDim) {
+        height = Math.round((height * maxDim) / width);
+        width = maxDim;
+    } else if (height > width && height > maxDim) {
+        width = Math.round((width * maxDim) / height);
+        height = maxDim;
+    }
+    canvas.width = width;
+    canvas.height = height;
+
+    context.drawImage(video, 0, 0, width, height);
+
+    // Reduce quality to 0.8 (80%)
+    capturedInput.value = canvas.toDataURL("image/jpeg", 0.8);
+    canvas.style.display = "block";
+}
+
+function clearCaptured() {
+    capturedInput.value = "";
+    canvas.style.display = "none";
+}
+
+// ------------------- ADD THIS BELOW ---------------------
+
+// Max file size in bytes (e.g. 2MB)
+const MAX_FILE_SIZE = 2 * 1024 * 1024;
+
+// Resize image function using canvas
+function resizeImage(file, maxWidth, maxHeight, callback) {
+  const reader = new FileReader();
+  reader.readAsDataURL(file);
+  reader.onload = event => {
+    const img = new Image();
+    img.src = event.target.result;
+
+    img.onload = () => {
+      let width = img.width;
+      let height = img.height;
+
+      // Calculate new dimensions
+      if (width > maxWidth) {
+        height = Math.round((height * maxWidth) / width);
+        width = maxWidth;
+      }
+      if (height > maxHeight) {
+        width = Math.round((width * maxHeight) / height);
+        height = maxHeight;
+      }
+
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, width, height);
+
+      canvas.toBlob(
+        blob => {
+          callback(blob);
+        },
+        file.type,
+        0.8 // quality 80%
+      );
+    };
+  };
+}
+
+// When user selects a file, check and resize if image
+document.querySelector('input[name="file"]').addEventListener('change', function(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  // If file is PDF, just check size
+  if (file.type === 'application/pdf') {
+    if (file.size > MAX_FILE_SIZE) {
+      alert('PDF file is too large! Please upload a file under 2MB.');
+      event.target.value = '';
+    }
+    return;
+  }
+
+  // If not image, ignore
+  if (!file.type.startsWith('image/')) {
+    return;
+  }
+
+  // If image is already small enough, do nothing
+  if (file.size <= MAX_FILE_SIZE) {
+    return;
+  }
+
+  // Resize image and replace file input with resized image
+  resizeImage(file, 1024, 1024, function(resizedBlob) {
+    if (resizedBlob.size > MAX_FILE_SIZE) {
+      alert('Image is still too large even after resizing. Please choose a smaller image.');
+      event.target.value = '';
+      return;
+    }
+
+    // Create new file from resized blob
+    const resizedFile = new File([resizedBlob], file.name, { type: file.type });
+
+    // Create DataTransfer to set file input programmatically
+    const dataTransfer = new DataTransfer();
+    dataTransfer.items.add(resizedFile);
+    event.target.files = dataTransfer.files;
+
+    alert('Image resized to fit the size limit.');
+  });
+});
+</script>
+
+</body>
+</html>

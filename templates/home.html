@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Home - Student Notes Portal</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet" />
+</head>
+<body>
+
+<header class="cover">
+  <div class="container">
+    <h1>Student Notes Portal</h1>
+    <p>Your one-stop platform for uploading, searching, and managing study notes and assignments effortlessly.</p>
+  </div>
+</header>
+
+<nav>
+  <ul class="navbar">
+    <li><a href="/profile">👤</a></li>
+    <li><a href="{{ url_for('home') }}">🏠</a></li>
+    <li><a href="/upload_notes">Upload Notes</a></li>
+    <li><a href="/search_notes">Search Notes</a></li>
+    <li><a href="{{ url_for('upload_assignment') }}">Upload Assignment</a></li>
+    <li><a href="{{ url_for('search_assignment') }}">Search Assignment</a></li>
+    <li><a href="/attendance">Attendance</a></li>
+    <li><a href="/logout">🚪</a></li>
+  </ul>
+</nav>
+
+<main class="main-content container">
+  <section class="welcome">
+    <h2>Welcome, {{ current_user.username or current_user.email }}</h2>
+  </section>
+
+  <section class="project-info">
+    <img src="{{ url_for('static', filename='img4.jpeg') }}" alt="Student Notes" />
+    <div class="description">
+      <h3>About This Project</h3>
+      <p>
+        This portal enables students to upload their notes and assignments, search through the content easily,
+        keep track of attendance, and improve learning efficiency. The platform is designed to be simple, intuitive,
+        and professional, helping you focus on your studies.
+      </p>
+    </div>
+  </section>
+
+  <section class="typing-game">
+    <a href="{{ url_for('typing_test') }}" class="btn-primary">
+      🎮 Try Typing Speed Game
+    </a>
+  </section>
+</main>
+
+</body>
+</html>

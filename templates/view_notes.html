@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>View Note</title>
+    
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet" />
+    
+    <style>
+      body {
+        font-family: 'Poppins', sans-serif;
+        background-color: #f9fafd;
+        color: #333;
+        margin: 0;
+        padding: 0 20px 40px;
+        line-height: 1.6;
+      }
+
+      .main-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        max-width: 1100px;
+        margin: 40px auto;
+        gap: 40px;
+        padding: 20px;
+      }
+
+      h2 {
+        margin-top: 0;
+        color: #2c3e50;
+        font-weight: 600;
+        font-size: 30px;
+        margin-bottom: 30px;
+      }
+
+      p {
+        font-size: 17px;
+        margin: 14px 0;
+      }
+
+      p strong {
+        color: #4a90e2;
+      }
+
+      embed {
+        width: 100%;
+        border-radius: 10px;
+        box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+        margin-top: 25px;
+        height: 400px;
+      }
+
+      img {
+        max-width: 100%;
+        max-height: 400px;
+        border-radius: 10px;
+        margin-top: 25px;
+        box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+        object-fit: contain;
+        transition: transform 0.3s ease;
+        cursor: zoom-in;
+      }
+
+      img:hover {
+        transform: scale(1.05);
+      }
+
+      /* Top right buttons container */
+      .top-right-buttons {
+        display: flex;
+        justify-content: flex-end;
+        gap: 15px;
+        margin: 25px 40px 0 0;
+      }
+
+      /* Buttons base style */
+      .top-right-buttons .btn {
+        padding: 12px 22px;
+        border-radius: 8px;
+        font-size: 16px;
+        color: white;
+        border: none;
+        cursor: pointer;
+        font-weight: 600;
+        box-shadow: 0 4px 12px rgba(74, 144, 226, 0.4);
+        background-color: #4a90e2;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        transition: background-color 0.25s ease, transform 0.25s ease, box-shadow 0.25s ease;
+        user-select: none;
+        text-decoration: none;
+      }
+
+      .top-right-buttons .btn:hover {
+        background-color: #357abd;
+        box-shadow: 0 6px 18px rgba(53, 122, 189, 0.6);
+        transform: scale(1.1);
+      }
+
+      /* Delete button */
+      .top-right-buttons .delete {
+        background-color: #e74c3c;
+        box-shadow: 0 4px 12px rgba(231, 76, 60, 0.4);
+      }
+
+      .top-right-buttons .delete:hover {
+        background-color: #c0392b;
+        box-shadow: 0 6px 18px rgba(192, 57, 43, 0.6);
+        transform: scale(1.1);
+      }
+
+      /* Back button */
+      .top-right-buttons .back {
+        background-color: #4a90e2;
+      }
+
+      .top-right-buttons .back:hover {
+        background-color: #357abd;
+      }
+
+      @media (max-width: 768px) {
+        .container {
+          padding: 20px 25px;
+          margin: 20px auto;
+          max-width: 95%;
+        }
+        .top-right-buttons {
+          margin-right: 25px;
+        }
+      }
+    </style>
+</head>
+<body>
+    
+<header class="cover">
+  <div class="container">
+    <h1>View Notes Portal</h1>
+    <p>Your one-stop platform for uploading, searching, and managing study notes and assignments effortlessly.</p>
+  </div>
+</header>
+
+<nav>
+  <ul class="navbar">
+    <li><a href="/profile">👤</a></li>
+    <li><a href="{{ url_for('home') }}">🏠</a></li>
+    <li><a href="/upload_notes">Upload Notes</a></li>
+    <li><a href="/search_notes">Search Notes</a></li>
+    <li><a href="{{ url_for('upload_assignment') }}">Upload Assignment</a></li>
+    <li><a href="{{ url_for('search_assignment') }}">Search Assignment</a></li>
+    <li><a href="/attendance">Attendance</a></li>
+    <li><a href="/logout">🚪</a></li>
+  </ul>
+</nav>
+
+<div class="top-right-buttons">
+    <form action="{{ url_for('delete_note', note_id=note._id) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this note?');" style="margin:0;">
+        <button type="submit" class="btn delete" title="Delete Note">🗑️ Delete</button>
+    </form>
+    <a href="javascript:history.back()" class="btn back">← Back</a>
+</div>
+
+<div class="container">
+    <h2>Note Details</h2>
+
+    <p><strong>Subject:</strong> {{ note.subject }}</p>
+    <p><strong>Topic:</strong> {{ note.topic }}</p>
+    {% if note.due_date %}
+        <p><strong>Due Date:</strong> {{ note.due_date }}</p>
+    {% endif %}
+
+    {% if note.filename %}
+        {% set ext = note.filename.rsplit('.', 1)[-1].lower() %}
+        {% if ext == 'pdf' %}
+            <embed src="{{ url_for('uploaded_file', filename=note.filename, t=note._id) }}" type="application/pdf" height="400px">
+        {% elif ext in ['jpg', 'jpeg', 'png'] %}
+            <img src="{{ url_for('uploaded_file', filename=note.filename, t=note._id) }}" alt="Note Image">
+        {% else %}
+            <a href="{{ url_for('uploaded_file', filename=note.filename, t=note._id) }}" download>Download File</a>
+        {% endif %}
+    {% elif note.captured_image %}
+        <img src="{{ url_for('uploaded_file', filename=note.captured_image, t=note._id) }}" alt="Captured Note Image">
+    {% else %}
+        <p>No file/image uploaded for this note.</p>
+    {% endif %}
+</div>
+
+</body>
+</html>

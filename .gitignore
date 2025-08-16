@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+flask_session/
+instance/
+uploads/*
+.env
+*.sqlite3
+.vscode/
