@@ -442,11 +442,12 @@ def delete_account():
     return redirect(url_for("register"))
 
 # ----------------- Default Route -------------------
-@app.route("/")
+@app.route('/')
 def index():
     if current_user.is_authenticated:
-        return redirect(url_for("home"))
-    return redirect(url_for("login"))
+        return redirect(url_for('home'))   # already logged in → go to homepage
+    else:
+        return redirect(url_for('login'))  # not logged in → go to login page
 
 
 
