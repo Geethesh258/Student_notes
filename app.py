@@ -184,13 +184,6 @@ def load_user(user_id):
     
 
 # ---------------- Email Sending Function ---------------- #
-import os
-import smtplib
-import threading
-import time
-from datetime import datetime, timedelta
-from email.mime.text import MIMEText
-
 # send email reminder
 def send_email_reminder(to_email, title, due_date):
     try:
@@ -1200,5 +1193,7 @@ def reset_password(token):
 # ----------------- Run -------------------
 if __name__ == "__main__":
     start_reminder_thread()   # ← start background reminder thread
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
     app.run(debug=True)
 
