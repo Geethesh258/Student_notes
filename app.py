@@ -26,12 +26,12 @@ from email.mime.text import MIMEText
 import threading
 from datetime import datetime, timedelta
 from flask import current_app
-from config import MAIL_SETTINGS 
+ 
 from itsdangerous import URLSafeTimedSerializer
 import json
 from bson.binary import Binary
 from itsdangerous import URLSafeTimedSerializer
-from config import MONGO_URI
+
 from dotenv import load_dotenv
 import mimetypes
 import os
@@ -182,6 +182,22 @@ def load_user(user_id):
     
 
 # ================== EMAIL REMINDER FUNCTION ==================
+import os
+import smtplib
+import threading
+import time
+from datetime import datetime, timedelta
+from email.mime.text import MIMEText
+from pymongo import MongoClient   # since you migrated to MongoDB
+
+# MongoDB setup (change DB name/collection if needed)
+client = MongoClient("mongodb://localhost:27017/")
+db = client["student_notes"]
+assignments_collection = db["assignments"]
+users_collection = db["users"]
+
+
+# ---------------- Email Sending Function ---------------- #
 def send_email_reminder(to_email, title, due_date):
     try:
         subject = f"📢 Assignment Reminder: {title} due on {due_date}"
@@ -196,14 +212,20 @@ Best regards,
 Your Student Notes App 📚
 """
 
+        # Load email settings
+        MAIL_SERVER = os.getenv("MAIL_SERVER")
+        MAIL_PORT = int(os.getenv("MAIL_PORT"))
+        MAIL_USERNAME = os.getenv("MAIL_USERNAME")
+        MAIL_PASSWORD = os.getenv("MAIL_PASSWORD")
+
         msg = MIMEText(body, "plain")
         msg["Subject"] = subject
-        msg["From"] = MAIL_SETTINGS["MAIL_USERNAME"]
+        msg["From"] = MAIL_USERNAME
         msg["To"] = to_email
 
-        with smtplib.SMTP(MAIL_SETTINGS["MAIL_SERVER"], MAIL_SETTINGS["MAIL_PORT"]) as server:
+        with smtplib.SMTP(MAIL_SERVER, MAIL_PORT) as server:
             server.starttls()
-            server.login(MAIL_SETTINGS["MAIL_USERNAME"], MAIL_SETTINGS["MAIL_PASSWORD"])
+            server.login(MAIL_USERNAME, MAIL_PASSWORD)
             server.send_message(msg)
 
         print(f"✅📧 Email sent successfully to {to_email} for assignment '{title}' due on {due_date}")
@@ -211,37 +233,35 @@ Your Student Notes App 📚
     except Exception as e:
         print(f"❌🚫 Failed to send email to {to_email}. Error: {e}")
 
-def check_due_assignments():
-    print("\n⏰🔍 Checking for assignments due in 2 days...")
 
-    target_date_str = (datetime.now().date() + timedelta(days=2)).isoformat()
+# ---------------- Reminder Job ---------------- #
+def reminder_job():
+    while True:
+        print("⏰ Running reminder check...")
 
-    due_assignments = assignments_collection.find({
-        "due_date": target_date_str,
-        "reminder_sent": {"$ne": True}
-    })
+        # Check assignments due in next 24 hours
+        upcoming = datetime.now() + timedelta(days=1)
+        due_assignments = assignments_collection.find({
+            "due_date": {"$lte": upcoming.strftime("%Y-%m-%d %H:%M:%S")}  # adjust format to your DB
+        })
 
-    for assignment in due_assignments:
-        print(f"📢 Sending reminder to {assignment['user_email']} for '{assignment['title']}' due on {assignment['due_date']}")
-        send_email_reminder(
-            assignment["user_email"],
-            assignment["title"],
-            assignment["due_date"]
-        )
-        assignments_collection.update_one(
-            {"_id": assignment["_id"]},
-            {"$set": {"reminder_sent": True}}
-        )
+        for assignment in due_assignments:
+            user = users_collection.find_one({"_id": assignment["user_id"]})
+            if user and "email" in user:
+                send_email_reminder(
+                    to_email=user["email"],
+                    title=assignment["title"],
+                    due_date=assignment["due_date"]
+                )
 
+        time.sleep(3600)  # run every 1 hour
+
+
+# ---------------- Start Reminder Thread ---------------- #
 def start_reminder_thread():
-    def run():
-        while True:
-            print("⏳ Waiting for next reminder check...")
-            check_due_assignments()
-            time.sleep(86400)  # every 20 seconds for testing
-    thread = threading.Thread(target=run)
-    thread.daemon = True
-    thread.start()
+    t = threading.Thread(target=reminder_job, daemon=True)
+    t.start()
+
     # ----------------- Register -------------------
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask import flash, redirect, url_for, render_template, request
