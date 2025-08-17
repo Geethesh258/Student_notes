@@ -53,7 +53,9 @@ def b64encode_filter(data):
     return data  # If not bytes, just return as is
 
 app.config["MONGO_URI"] = os.getenv("MONGO_URI")
-mongo = PyMongo(app)
+MONGO_URI = os.getenv("MONGO_URI")
+mongo = PyMongo(app, uri=MONGO_URI)
+
 # Configuration
 
 UPLOAD_FOLDER = os.path.join(app.root_path, 'static', 'uploads')
@@ -65,16 +67,16 @@ ALLOWED_EXTENSIONS = {'pdf', 'doc', 'docx', 'txt', 'png', 'jpg', 'jpeg', 'gif'}
 app.config['UPLOAD_FOLDER'] = os.path.join(os.getcwd(), 'uploads')
 app.config['UPLOAD_FOLDER'] = 'static/uploads'
 # Flask-Mail config
-app.config["MAIL_SERVER"]   = os.getenv("MAIL_SERVER")
-app.config["MAIL_PORT"]     = int(os.getenv("MAIL_PORT", 587))   # default 587
-app.config["MAIL_USE_TLS"]  = os.getenv("MAIL_USE_TLS", "True") == "True"
+# Flask-Mail configuration from .env
+app.config["MAIL_SERVER"] = os.getenv("MAIL_SERVER")
+app.config["MAIL_PORT"] = int(os.getenv("MAIL_PORT"))
+app.config["MAIL_USE_TLS"] = os.getenv("MAIL_USE_TLS", "True") == "True"
+app.config["MAIL_USE_SSL"] = False  # keep TLS enabled, SSL off
 app.config["MAIL_USERNAME"] = os.getenv("MAIL_USERNAME")
 app.config["MAIL_PASSWORD"] = os.getenv("MAIL_PASSWORD")
-app.config["MAIL_USE_SSL"]  = False
+app.config["MAIL_DEFAULT_SENDER"] = os.getenv("MAIL_USERNAME")
 
 mail = Mail(app)
-
-
 
 
 @app.errorhandler(RequestEntityTooLarge)
@@ -85,7 +87,7 @@ def handle_file_too_large(e):
 
 @app.route('/debug_dbs')
 def debug_dbs():
-    client = MongoClient("mongodb://localhost:27017/")
+    client = MongoClient(os.getenv("MONGO_URI"))
     print("Databases:", client.list_database_names())
     return {"databases": client.list_database_names()}
 
@@ -181,23 +183,15 @@ def load_user(user_id):
 
     
 
-# ================== EMAIL REMINDER FUNCTION ==================
+# ---------------- Email Sending Function ---------------- #
 import os
 import smtplib
 import threading
 import time
 from datetime import datetime, timedelta
 from email.mime.text import MIMEText
-from pymongo import MongoClient   # since you migrated to MongoDB
 
-# MongoDB setup (change DB name/collection if needed)
-client = MongoClient("mongodb://localhost:27017/")
-db = client["student_notes"]
-assignments_collection = db["assignments"]
-users_collection = db["users"]
-
-
-# ---------------- Email Sending Function ---------------- #
+# send email reminder
 def send_email_reminder(to_email, title, due_date):
     try:
         subject = f"📢 Assignment Reminder: {title} due on {due_date}"
@@ -212,17 +206,19 @@ Best regards,
 Your Student Notes App 📚
 """
 
-        # Load email settings
+        # Email config
         MAIL_SERVER = os.getenv("MAIL_SERVER")
         MAIL_PORT = int(os.getenv("MAIL_PORT"))
         MAIL_USERNAME = os.getenv("MAIL_USERNAME")
         MAIL_PASSWORD = os.getenv("MAIL_PASSWORD")
 
+        # Create message
         msg = MIMEText(body, "plain")
         msg["Subject"] = subject
         msg["From"] = MAIL_USERNAME
         msg["To"] = to_email
 
+        # Send email
         with smtplib.SMTP(MAIL_SERVER, MAIL_PORT) as server:
             server.starttls()
             server.login(MAIL_USERNAME, MAIL_PASSWORD)
@@ -234,35 +230,42 @@ Your Student Notes App 📚
         print(f"❌🚫 Failed to send email to {to_email}. Error: {e}")
 
 
-# ---------------- Reminder Job ---------------- #
-def reminder_job():
-    while True:
-        print("⏰ Running reminder check...")
+# check assignments due in 2 days
+def check_due_assignments():
+    print("\n⏰🔍 Checking for assignments due in 2 days...")
 
-        # Check assignments due in next 24 hours
-        upcoming = datetime.now() + timedelta(days=1)
-        due_assignments = assignments_collection.find({
-            "due_date": {"$lte": upcoming.strftime("%Y-%m-%d %H:%M:%S")}  # adjust format to your DB
-        })
+    target_date_str = (datetime.now().date() + timedelta(days=2)).isoformat()
 
-        for assignment in due_assignments:
-            user = users_collection.find_one({"_id": assignment["user_id"]})
-            if user and "email" in user:
-                send_email_reminder(
-                    to_email=user["email"],
-                    title=assignment["title"],
-                    due_date=assignment["due_date"]
-                )
+    due_assignments = assignments_collection.find({
+        "due_date": target_date_str,
+        "reminder_sent": {"$ne": True}
+    })
 
-        time.sleep(3600)  # run every 1 hour
+    for assignment in due_assignments:
+        print(f"📢 Sending reminder to {assignment['user_email']} for '{assignment['title']}' due on {assignment['due_date']}")
+        send_email_reminder(
+            assignment["user_email"],
+            assignment["title"],
+            assignment["due_date"]
+        )
+        assignments_collection.update_one(
+            {"_id": assignment["_id"]},
+            {"$set": {"reminder_sent": True}}
+        )
 
 
-# ---------------- Start Reminder Thread ---------------- #
+# run reminder in background
 def start_reminder_thread():
-    t = threading.Thread(target=reminder_job, daemon=True)
-    t.start()
+    def run():
+        while True:
+            print("⏳ Waiting for next reminder check...")
+            check_due_assignments()
+            time.sleep(86400)  # runs once every 24 hours (use 20 for testing)
+    thread = threading.Thread(target=run)
+    thread.daemon = True
+    thread.start()
 
-    # ----------------- Register -------------------
+        # ----------------- Register -------------------
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask import flash, redirect, url_for, render_template, request
 from flask_login import login_user, current_user
