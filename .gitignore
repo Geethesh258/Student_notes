@@ -8,3 +8,4 @@ uploads/*
 .env
 *.sqlite3
 .vscode/
+config.py

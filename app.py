@@ -32,6 +32,7 @@ from itsdangerous import URLSafeTimedSerializer
 import json
 from bson.binary import Binary
 from itsdangerous import URLSafeTimedSerializer
+from config import MONGO_URI
 import os
 os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
 
@@ -50,7 +51,7 @@ def b64encode_filter(data):
         return Markup(encoded)
     return data  # If not bytes, just return as is
 
-app.config["MONGO_URI"] = "mongodb://localhost:27017/student_project"
+app.config["MONGO_URI"] = MONGO_URI
 mongo = PyMongo(app)
 # Configuration
 
