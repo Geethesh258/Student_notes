@@ -33,12 +33,13 @@ import json
 from bson.binary import Binary
 from itsdangerous import URLSafeTimedSerializer
 from config import MONGO_URI
+from dotenv import load_dotenv
 import os
 os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
 
-
+load_dotenv()
 app = Flask(__name__)
-app.secret_key = config.SECRET_KEY  # Replace with a secure key in production# Allow uploads up to 1 GB
+app.secret_key = os.getenv("SECRET_KEY") # Replace with a secure key in production# Allow uploads up to 1 GB
 app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024 
 app.config['SESSION_TYPE'] = 'filesystem'  # store sessions in files
 app.config['SESSION_PERMANENT'] = False
@@ -51,7 +52,7 @@ def b64encode_filter(data):
         return Markup(encoded)
     return data  # If not bytes, just return as is
 
-app.config["MONGO_URI"] = MONGO_URI
+app.config["MONGO_URI"] = os.getenv("MONGO_URI")
 mongo = PyMongo(app)
 # Configuration
 
@@ -64,11 +65,11 @@ ALLOWED_EXTENSIONS = {'pdf', 'doc', 'docx', 'txt', 'png', 'jpg', 'jpeg', 'gif'}
 app.config['UPLOAD_FOLDER'] = os.path.join(os.getcwd(), 'uploads')
 app.config['UPLOAD_FOLDER'] = 'static/uploads'
 # Flask-Mail config
-app.config['MAIL_SERVER'] = 'smtp.gmail.com'
-app.config['MAIL_PORT'] = 587
-app.config['MAIL_USERNAME'] = 'geetheshkumar81@gmail.com'
-app.config['MAIL_PASSWORD'] = 'fezlgkmsosvgwhdl'
-app.config['MAIL_USE_TLS'] = True
+app.config["MAIL_SERVER"] = os.getenv("MAIL_SERVER")
+app.config["MAIL_PORT"] = int(os.getenv("MAIL_PORT"))
+app.config["MAIL_USE_TLS"] = os.getenv("MAIL_USE_TLS") == "True"
+app.config["MAIL_USERNAME"] = os.getenv("MAIL_USERNAME")
+app.config["MAIL_PASSWORD"] = os.getenv("MAIL_PASSWORD")
 app.config['MAIL_USE_SSL'] = False
 
 mail = Mail(app)
@@ -120,22 +121,29 @@ os.makedirs("uploads/assignments", exist_ok=True)
 
 #google oauth
 # Google OAuth blueprint
+import os
 from flask_dance.contrib.google import make_google_blueprint
 
+# Load from environment
+GOOGLE_CLIENT_ID = os.getenv("GOOGLE_OAUTH_CLIENT_ID")
+GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_OAUTH_CLIENT_SECRET")
+
 google_bp = make_google_blueprint(
-    client_id="YOUR_GOOGLE_CLIENT_ID",
-    client_secret="YOUR_GOOGLE_CLIENT_SECRET",
-    scope=["openid", "https://www.googleapis.com/auth/userinfo.email", "https://www.googleapis.com/auth/userinfo.profile"],
+    client_id=GOOGLE_CLIENT_ID,
+    client_secret=GOOGLE_CLIENT_SECRET,
+    scope=[
+        "openid",
+        "https://www.googleapis.com/auth/userinfo.email",
+        "https://www.googleapis.com/auth/userinfo.profile"
+    ],
     redirect_url="/google_login"
 )
 
-app.register_blueprint(google_bp, url_prefix="/login")
-
-# Only register the blueprint if it isn't already registered
+# Only register the blueprint if not already registered
 if "google" not in app.blueprints:
     app.register_blueprint(google_bp, url_prefix="/login")
 else:
-    print("Google blueprint already registered, skipping registration.")
+    print("⚠️ Google blueprint already registered, skipping registration.")
 
 #usermixin
 class User(UserMixin):
