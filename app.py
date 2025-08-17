@@ -91,8 +91,9 @@ def debug_dbs():
 
 
 # ----------------- MongoDB Setup -------------------
-client = MongoClient("mongodb://localhost:27017/")
-db = client["student_project"]
+
+client = MongoClient(os.getenv("MONGO_URI"))
+db = client["student_notes"]
 users = db["users"]
 notes_collection = db["notes"]
 assignments_collection = db["assignments"]
