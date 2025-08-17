@@ -4,7 +4,6 @@ from flask_dance.contrib.google import make_google_blueprint, google
 from pymongo import MongoClient
 from flask_pymongo import PyMongo
 from werkzeug.security import generate_password_hash, check_password_hash
-import config
 import base64
 from flask_session import Session  
 from PIL import Image
@@ -34,6 +33,7 @@ from bson.binary import Binary
 from itsdangerous import URLSafeTimedSerializer
 from config import MONGO_URI
 from dotenv import load_dotenv
+import mimetypes
 import os
 os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
 
@@ -65,12 +65,12 @@ ALLOWED_EXTENSIONS = {'pdf', 'doc', 'docx', 'txt', 'png', 'jpg', 'jpeg', 'gif'}
 app.config['UPLOAD_FOLDER'] = os.path.join(os.getcwd(), 'uploads')
 app.config['UPLOAD_FOLDER'] = 'static/uploads'
 # Flask-Mail config
-app.config["MAIL_SERVER"] = os.getenv("MAIL_SERVER")
-app.config["MAIL_PORT"] = int(os.getenv("MAIL_PORT"))
-app.config["MAIL_USE_TLS"] = os.getenv("MAIL_USE_TLS") == "True"
+app.config["MAIL_SERVER"]   = os.getenv("MAIL_SERVER")
+app.config["MAIL_PORT"]     = int(os.getenv("MAIL_PORT", 587))   # default 587
+app.config["MAIL_USE_TLS"]  = os.getenv("MAIL_USE_TLS", "True") == "True"
 app.config["MAIL_USERNAME"] = os.getenv("MAIL_USERNAME")
 app.config["MAIL_PASSWORD"] = os.getenv("MAIL_PASSWORD")
-app.config['MAIL_USE_SSL'] = False
+app.config["MAIL_USE_SSL"]  = False
 
 mail = Mail(app)
 
@@ -106,15 +106,15 @@ def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 # ----------------- Flask-Login Setup -------------------
-app.secret_key = config.SECRET_KEY 
+app.secret_key = os.getenv("SECRET_KEY")
 login_manager = LoginManager()
 login_manager.login_view = "login"
 login_manager.login_message_category = "info"
 login_manager.init_app(app)
-
 # ----------------- Google OAuth Setup -------------------
-app.config["GOOGLE_OAUTH_CLIENT_ID"] = config.GOOGLE_OAUTH_CLIENT_ID
-app.config["GOOGLE_OAUTH_CLIENT_SECRET"] = config.GOOGLE_OAUTH_CLIENT_SECRET
+app.config["GOOGLE_OAUTH_CLIENT_ID"] = os.getenv("GOOGLE_OAUTH_CLIENT_ID")
+app.config["GOOGLE_OAUTH_CLIENT_SECRET"] = os.getenv("GOOGLE_OAUTH_CLIENT_SECRET")
+
 
 # Make sure folder exists
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
@@ -809,7 +809,7 @@ def upload_assignment():
     return render_template("upload_assignment.html", assignments=user_assignments)
 
 # ------------------ SEARCH ASSIGNMENT ------------------
-import mimetypes
+
 ALLOWED_FIELDS = [
     "_id", "user_email", "subject", "title", "due_date", "upload_date",
     "file", "captured_image", "captured_mime", "reminder_sent"
@@ -862,8 +862,6 @@ def search_assignment():
 @app.route('/view_assignment/<assignment_id>')
 @login_required
 def view_assignment(assignment_id):
-    import base64
-    from flask import url_for
 
     assignment = assignments_collection.find_one(
         {"_id": ObjectId(assignment_id), "user_email": current_user.email},
