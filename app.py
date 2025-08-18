@@ -114,9 +114,6 @@ login_manager.login_view = "login"
 login_manager.login_message_category = "info"
 login_manager.init_app(app)
 # ----------------- Google OAuth Setup -------------------
-app.config["GOOGLE_OAUTH_CLIENT_ID"] = os.getenv("GOOGLE_OAUTH_CLIENT_ID")
-app.config["GOOGLE_OAUTH_CLIENT_SECRET"] = os.getenv("GOOGLE_OAUTH_CLIENT_SECRET")
-
 
 # Make sure folder exists
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
