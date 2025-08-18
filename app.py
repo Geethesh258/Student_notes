@@ -43,6 +43,10 @@ app.secret_key = os.getenv("SECRET_KEY") # Replace with a secure key in producti
 app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024 
 app.config['SESSION_TYPE'] = 'filesystem'  # store sessions in files
 app.config['SESSION_PERMANENT'] = False
+app.config["SESSION_COOKIE_SECURE"] = True  # ensures cookies work on HTTPS
+app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+app.config["SESSION_PROTECTION"] = "strong"
+
 Session(app)
 serializer = URLSafeTimedSerializer(app.secret_key)
 @app.template_filter('b64encode')
@@ -382,10 +386,10 @@ def logout():
     return redirect(url_for('login'))
 
 # ----------------- Home -----------------
-@app.route("/home")
+@app.route('/home')
 @login_required
 def home():
-    return render_template("home.html", user=current_user)
+    return render_template('home.html')
 
 #profile
 @app.route("/profile")
