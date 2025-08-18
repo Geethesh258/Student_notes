@@ -26,43 +26,23 @@ from email.mime.text import MIMEText
 import threading
 from datetime import datetime, timedelta
 from flask import current_app
-from flask import session  
+ 
 from itsdangerous import URLSafeTimedSerializer
 import json
 from bson.binary import Binary
 from itsdangerous import URLSafeTimedSerializer
-from werkzeug.middleware.proxy_fix import ProxyFix
-from flask_dance.contrib.google import make_google_blueprint, google
+
 from dotenv import load_dotenv
 import mimetypes
-from authlib.integrations.flask_client import OAuth
-
-
 import os
 os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
 
 load_dotenv()
 app = Flask(__name__)
-app.secret_key = os.getenv("SECRET_KEY")  # secure key from .env
-# Put this right after app = Flask(__name__)
-app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
-
-
-# Uploads config
-app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024  # 100 MB max upload
-oauth = OAuth(app)
-# Session config
-app.config['SESSION_TYPE'] = 'filesystem'  # store sessions on server
+app.secret_key = os.getenv("SECRET_KEY") # Replace with a secure key in production# Allow uploads up to 1 GB
+app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024 
+app.config['SESSION_TYPE'] = 'filesystem'  # store sessions in files
 app.config['SESSION_PERMANENT'] = False
-if os.getenv("FLASK_ENV") == "production":
-    app.config["SESSION_COOKIE_SECURE"] = True   # only over HTTPS
-    app.config["SESSION_COOKIE_SAMESITE"] = "None"
-else:
-    app.config["SESSION_COOKIE_SECURE"] = False  # allow HTTP (dev)
-    app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
-  # ✅ prevents some cross-site cookie issues
-app.config["SESSION_PROTECTION"] = "strong"     # ✅ adds protection against session tampering
-app.config["PREFERRED_URL_SCHEME"] = "https"
 Session(app)
 serializer = URLSafeTimedSerializer(app.secret_key)
 @app.template_filter('b64encode')
@@ -104,10 +84,6 @@ def handle_file_too_large(e):
     flash("File is too large. Max size is 100MB.")  # Update size if needed
     return redirect(request.url)
 
-@app.route('/check_session')
-def check_session():
-    return dict(session=dict(session))
-
 
 @app.route('/debug_dbs')
 def debug_dbs():
@@ -132,11 +108,15 @@ def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 # ----------------- Flask-Login Setup -------------------
+app.secret_key = os.getenv("SECRET_KEY")
 login_manager = LoginManager()
 login_manager.login_view = "login"
 login_manager.login_message_category = "info"
 login_manager.init_app(app)
 # ----------------- Google OAuth Setup -------------------
+app.config["GOOGLE_OAUTH_CLIENT_ID"] = os.getenv("GOOGLE_OAUTH_CLIENT_ID")
+app.config["GOOGLE_OAUTH_CLIENT_SECRET"] = os.getenv("GOOGLE_OAUTH_CLIENT_SECRET")
+
 
 # Make sure folder exists
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
@@ -144,17 +124,26 @@ os.makedirs("uploads/assignments", exist_ok=True)
 
 #google oauth
 # Google OAuth blueprint
-from authlib.integrations.flask_client import OAuth
+from flask import session
+from flask_dance.contrib.google import make_google_blueprint, google
 
-# OAuth setup
-oauth = OAuth(app)
-oauth.register(
-    name="google",
-    client_id=os.getenv("GOOGLE_OAUTH_CLIENT_ID"),
-    client_secret=os.getenv("GOOGLE_OAUTH_CLIENT_SECRET"),
-    server_metadata_url="https://accounts.google.com/.well-known/openid-configuration",
-    client_kwargs={"scope": "openid email profile"}
+def save_token(token):
+    session["google_oauth_token"] = token
+
+google_bp = make_google_blueprint(
+    client_id="YOUR_CLIENT_ID",
+    client_secret="YOUR_CLIENT_SECRET",
+    scope=["profile", "email"],
+    redirect_to="google_login",
 )
+app.register_blueprint(google_bp, url_prefix="/login")
+
+# Only register the blueprint if not already registered
+if "google" not in app.blueprints:
+    app.register_blueprint(google_bp, url_prefix="/login")
+else:
+    print("⚠️ Google blueprint already registered, skipping registration.")
+
 #usermixin
 class User(UserMixin):
     def __init__(self, id, email, username, profile_pic=None, activities=None):
@@ -171,16 +160,24 @@ class User(UserMixin):
 
 @login_manager.user_loader
 def load_user(user_id):
-    user_data = users.find_one({"_id": ObjectId(user_id)})
-    if user_data:
-        return User(
-            id=str(user_data["_id"]),
-            email=user_data["email"],
-            username=user_data.get("name"),
-            profile_pic=user_data.get("profile_pic")
-        )
-    return None
+    try:
+        # Convert user_id string back to ObjectId for Mongo query
+        user_data = users.find_one({"_id": ObjectId(user_id)})
+    except Exception:
+        return None
 
+    if not user_data:
+        return None
+
+    return User(
+        id=str(user_data['_id']),  # ✅ MUST be string
+        email=user_data.get('email'),
+        username=user_data.get('name'),
+        profile_pic=user_data.get('profile_pic'),
+        activities=user_data.get('activities', [])
+    )
+
+    
 
 # ---------------- Email Sending Function ---------------- #
 # send email reminder
@@ -343,49 +340,25 @@ def update_password():
     return redirect(url_for('home'))
 
 # ----------------- Google Login -----------------
+@app.route("/google_login")
+def google_login():
+    if not google.authorized:
+        return redirect(url_for("google.login"))
 
-# -------------------------------
-# Google Login Route
-# -------------------------------
-@app.route("/login/google")
-def login_google():
-    redirect_uri = url_for("authorize_google", _external=True)
-    return oauth.google.authorize_redirect(redirect_uri)
+    try:
+        resp = google.get("/oauth2/v2/userinfo")
+        if not resp.ok:
+            flash("Google login failed. Please try again.", "danger")
+            return redirect(url_for("login"))
 
-@app.route("/login/google/authorized")
-def authorize_google():
-    token = oauth.google.authorize_access_token()
-    user_info = oauth.google.parse_id_token(token)
+        user_info = resp.json()
+        # ✅ use user_info["email"], user_info["name"], etc.
+        flash(f"Welcome {user_info['email']}", "success")
+        return redirect(url_for("home"))
 
-    if not user_info:
-        flash("Google login failed.", "danger")
-        return redirect(url_for("login"))
-
-    email = user_info["email"]
-    name = user_info.get("name", email)
-    picture = user_info.get("picture")
-
-    # Find or insert user in MongoDB
-    user_data = users.find_one({"email": email})
-    if not user_data:
-        user_id = users.insert_one({
-            "email": email,
-            "name": name,
-            "profile_pic": picture
-        }).inserted_id
-        user_data = users.find_one({"_id": user_id})
-
-    # Create User object and login
-    user = User(
-        id=str(user_data["_id"]),
-        email=user_data["email"],
-        username=user_data.get("name"),
-        profile_pic=user_data.get("profile_pic")
-    )
-    login_user(user)
-
-    flash("Logged in successfully!", "success")
-    return redirect(url_for("home"))
+    except Exception as e:
+        flash("Session expired, please login again.", "warning")
+        return redirect(url_for("google.login"))
 # ----------------- Logout -----------------
 @app.route('/logout')
 @login_required
@@ -1197,6 +1170,8 @@ def reset_password(token):
 
 # ----------------- Run -------------------
 if __name__ == "__main__":
-    start_reminder_thread()
+    start_reminder_thread()   # ← start background reminder thread
     port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port, debug=True)
+    app.run(host="0.0.0.0", port=port)
+    app.run(debug=False)
+
