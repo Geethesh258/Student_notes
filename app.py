@@ -121,29 +121,19 @@ os.makedirs("uploads/assignments", exist_ok=True)
 
 #google oauth
 # Google OAuth blueprint
-import os
 from flask_dance.contrib.google import make_google_blueprint
 
-# Load from environment
-GOOGLE_CLIENT_ID = os.getenv("GOOGLE_OAUTH_CLIENT_ID")
-GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_OAUTH_CLIENT_SECRET")
-
 google_bp = make_google_blueprint(
-    client_id=GOOGLE_CLIENT_ID,
-    client_secret=GOOGLE_CLIENT_SECRET,
+    client_id=os.getenv("GOOGLE_OAUTH_CLIENT_ID"),
+    client_secret=os.getenv("GOOGLE_OAUTH_CLIENT_SECRET"),
     scope=[
         "openid",
         "https://www.googleapis.com/auth/userinfo.email",
         "https://www.googleapis.com/auth/userinfo.profile"
     ],
-    redirect_url="/google_login"
+    redirect_url="/google_login"  # this points to your Flask route
 )
-
-# Only register the blueprint if not already registered
-if "google" not in app.blueprints:
-    app.register_blueprint(google_bp, url_prefix="/login")
-else:
-    print("⚠️ Google blueprint already registered, skipping registration.")
+app.register_blueprint(google_bp, url_prefix="/login")
 
 #usermixin
 class User(UserMixin):
@@ -341,23 +331,27 @@ def update_password():
     return redirect(url_for('home'))
 
 # ----------------- Google Login -----------------
-@app.route('/google_login')
+@app.route("/google_login")
 def google_login():
+    # Step 1: If user hasn't authorized Google, redirect
     if not google.authorized:
-        return redirect(url_for('google.login'))
+        return redirect(url_for("google.login"))
 
+    # Step 2: Get user info from Google
     resp = google.get("/oauth2/v2/userinfo")
     if not resp.ok:
         flash("Failed to fetch user info from Google.", "danger")
-        return redirect(url_for('login'))
+        return redirect(url_for("login"))
 
     info = resp.json()
-    email = info['email']
-    name = info.get('name', email.split('@')[0])
-    profile_pic = info.get('picture')
+    email = info["email"]
+    name = info.get("name", email.split("@")[0])
+    profile_pic = info.get("picture", "mahadev.jpg")
 
-    user_data = users.find_one({'email': email})
+    # Step 3: Check if user exists in MongoDB
+    user_data = users.find_one({"email": email})
     if not user_data:
+        # Step 4: Create new user if not exists
         users.insert_one({
             "name": name,
             "email": email,
@@ -366,17 +360,21 @@ def google_login():
             "activities": [],
             "captured_image": None
         })
-        user_data = users.find_one({'email': email})
+        user_data = users.find_one({"email": email})
 
+    # Step 5: Create Flask-Login user
     user = User(
-        id=user_data['_id'],
-        email=user_data['email'],
-        username=user_data.get('name'),
-        profile_pic=user_data.get('profile_pic'),
-        activities=user_data.get('activities', [])
+        id=str(user_data["_id"]),
+        email=user_data["email"],
+        username=user_data.get("name"),
+        profile_pic=user_data.get("profile_pic")
     )
-    login_user(user)
-    return redirect(url_for('home'))
+
+    # ✅ Step 6: Log in the user with Flask-Login
+    login_user(user, remember=True)  # remember=True persists session
+
+    # Step 7: Redirect to home
+    return redirect(url_for("home"))
 
 # ----------------- Logout -----------------
 @app.route('/logout')
@@ -387,11 +385,10 @@ def logout():
     return redirect(url_for('login'))
 
 # ----------------- Home -----------------
-@app.route('/home')
+@app.route("/home")
 @login_required
 def home():
-    return render_template('home.html')
-
+    return render_template("home.html", user=current_user)
 
 #profile
 @app.route("/profile")
@@ -1189,8 +1186,6 @@ def reset_password(token):
 
 # ----------------- Run -------------------
 if __name__ == "__main__":
-    start_reminder_thread()   # ← start background reminder thread
+    start_reminder_thread()
     port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port)
-    app.run(debug=True)
-
+    app.run(host="0.0.0.0", port=port, debug=False)
