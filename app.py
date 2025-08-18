@@ -130,8 +130,7 @@ google_bp = make_google_blueprint(
         "openid",
         "https://www.googleapis.com/auth/userinfo.email",
         "https://www.googleapis.com/auth/userinfo.profile"
-    ],
-    redirect_url="/google_login"  # this points to your Flask route
+    ]
 )
 app.register_blueprint(google_bp, url_prefix="/login")
 
@@ -333,11 +332,9 @@ def update_password():
 # ----------------- Google Login -----------------
 @app.route("/google_login")
 def google_login():
-    # Step 1: If user hasn't authorized Google, redirect
     if not google.authorized:
         return redirect(url_for("google.login"))
 
-    # Step 2: Get user info from Google
     resp = google.get("/oauth2/v2/userinfo")
     if not resp.ok:
         flash("Failed to fetch user info from Google.", "danger")
@@ -348,10 +345,8 @@ def google_login():
     name = info.get("name", email.split("@")[0])
     profile_pic = info.get("picture", "mahadev.jpg")
 
-    # Step 3: Check if user exists in MongoDB
     user_data = users.find_one({"email": email})
     if not user_data:
-        # Step 4: Create new user if not exists
         users.insert_one({
             "name": name,
             "email": email,
@@ -362,7 +357,6 @@ def google_login():
         })
         user_data = users.find_one({"email": email})
 
-    # Step 5: Create Flask-Login user
     user = User(
         id=str(user_data["_id"]),
         email=user_data["email"],
@@ -370,10 +364,7 @@ def google_login():
         profile_pic=user_data.get("profile_pic")
     )
 
-    # ✅ Step 6: Log in the user with Flask-Login
-    login_user(user, remember=True)  # remember=True persists session
-
-    # Step 7: Redirect to home
+    login_user(user, remember=True)
     return redirect(url_for("home"))
 
 # ----------------- Logout -----------------
