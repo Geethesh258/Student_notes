@@ -1,4 +1,6 @@
-# 📚 Student Nerves Project
+# 📚 Student Notes Project
+
+✅ Deployment → 🌍 Live at apnanotezz.onrender.com
 
 A simple and efficient web application designed for students to **manage notes, assignments, and attendance** in one place.  
 Built with **Flask**, **MongoDB**, and modern web technologies, this project helps students stay organized and productive.
