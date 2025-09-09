@@ -249,7 +249,7 @@ def start_reminder_thread():
         while True:
             print("⏳ Waiting for next reminder check...")
             check_due_assignments()
-            time.sleep(86400)  # runs once every 24 hours (use 20 for testing)
+            time.sleep(60)  # runs once every 1 minite (use 20 for testing)
     thread = threading.Thread(target=run)
     thread.daemon = True
     thread.start()
