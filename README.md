@@ -7,7 +7,7 @@
 ![Attendance Tracking](img5.png)
 ![Dashboard Overview](img6.png)
 
-# 📚 Student Nerves Project
+# 📚 Student Notes Project (apnanotezz)
 
 A simple and efficient web application designed for students to **manage notes, assignments, and attendance** in one place.  
 Built with **Flask**, **MongoDB**, and modern web technologies, this project helps students stay organized and productive.
