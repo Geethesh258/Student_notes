@@ -1,11 +1,12 @@
 ## 📸 Project Screenshots
 
-![Login Page](img1.png)
-![Registration Page](img2.png)
-![Notes Management](img3.png)
-![Assignments Page](img4.png)
-![Attendance Tracking](img5.png)
-![Dashboard Overview](img6.png)
+![Screenshot 1](static/uploads/img1.png)
+![Screenshot 2](static/uploads/img2.png)
+![Screenshot 3](static/uploads/img3.png)
+![Screenshot 4](static/uploads/img4.png)
+![Screenshot 5](static/uploads/img5.png)
+![Screenshot 6](static/uploads/img6.png)
+
 
 # 📚 Student Notes Project (apnanotezz)
 
