@@ -1,3 +1,12 @@
+## 📸 Project Screenshots
+
+![Login Page](img1.png)
+![Registration Page](img2.png)
+![Notes Management](img3.png)
+![Assignments Page](img4.png)
+![Attendance Tracking](img5.png)
+![Dashboard Overview](img6.png)
+
 # 📚 Student Nerves Project
 
 A simple and efficient web application designed for students to **manage notes, assignments, and attendance** in one place.  
